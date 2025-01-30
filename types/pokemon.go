@@ -2,6 +2,7 @@ package types
 
 type Pokemon struct {
 	Name    string         `json:"name"`
+	Type    []string       `json:"type"`
 	Item    string         `json:"item"`
 	Ability string         `json:"ability"`
 	Level   int            `json:"level"`
@@ -10,10 +11,7 @@ type Pokemon struct {
 	IVs     map[string]int `json:"ivs"`
 	Nature  string         `json:"nature"`
 	Moves   []string       `json:"moves"`
+	Status  string         `json:"status"`
 
-	Stats map[string]int
-}
-
-type Move struct {
-	Name string `json:"name"`
+	FinalStats map[string]int
 }

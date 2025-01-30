@@ -1,7 +1,6 @@
 package helpers
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/padeshaies/pkmdamagecalculator/types"
@@ -37,7 +36,7 @@ func TestCalculateStats(t *testing.T) {
 			expected: types.Pokemon{
 				Name:   "Gholdengo",
 				Nature: "Timid",
-				Stats: map[string]int{
+				FinalStats: map[string]int{
 					"hp":              169,
 					"attack":          58,
 					"defense":         116,
@@ -63,7 +62,7 @@ func TestCalculateStats(t *testing.T) {
 			expected: types.Pokemon{
 				Name:   "Shedinja",
 				Nature: "Hardy",
-				Stats: map[string]int{
+				FinalStats: map[string]int{
 					"hp":              1,
 					"attack":          7,
 					"defense":         6,
@@ -80,7 +79,7 @@ func TestCalculateStats(t *testing.T) {
 		if tempNature == "" {
 			tempNature = "(no nature)"
 		}
-		fmt.Println("Calculating stats for", tempNature, c.input.Name)
+		t.Log("Calculating stats for", tempNature, c.input.Name)
 
 		err := CalculateStats(&c.input)
 		if err != nil {
@@ -90,14 +89,14 @@ func TestCalculateStats(t *testing.T) {
 		if c.input.Nature != c.expected.Nature {
 			t.Errorf("/!\\ calculateStats(%v) Nature = %s; want %s", c.input, c.input.Nature, c.expected.Nature)
 		}
-		fmt.Printf("- Expected Nature: %s, got %s\n", c.expected.Nature, c.input.Nature)
+		t.Logf("- Expected Nature: %s, got %s\n", c.expected.Nature, c.input.Nature)
 
-		for stat, value := range c.expected.Stats {
-			if c.input.Stats[stat] != value {
-				t.Errorf("/!\\ calculateStats(%v) %s = %v; want %v", c.input, stat, c.input.Stats[stat], value)
+		for stat, value := range c.expected.FinalStats {
+			if c.input.FinalStats[stat] != value {
+				t.Errorf("/!\\ calculateStats(%v) %s = %v; want %v", c.input, stat, c.input.FinalStats[stat], value)
 			}
 
-			fmt.Printf("- Expected %s: %v, got %v\n", stat, value, c.input.Stats[stat])
+			t.Logf("- Expected %s: %v, got %v\n", stat, value, c.input.FinalStats[stat])
 		}
 	}
 }

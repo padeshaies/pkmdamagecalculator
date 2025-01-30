@@ -37,7 +37,29 @@ func handleGetCalc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	move := types.Move{
+		Name:        "shadow ball",
+		Type:        "ghost",
+		Power:       80,
+		DamageClass: "special",
+		Target:      "selected-pokemon",
+		CriticalHit: false,
+	}
+	damage := helpers.CalculateDamage(params.LeftPokemon, params.RightPokemon, move)
+
+	type response struct {
+		Damage []int `json:"damage"`
+	}
+	res := response{Damage: damage}
+
+	responseData, err := json.Marshal(res)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Error encoding response"))
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("calculating..."))
+	w.Write(responseData)
 }
