@@ -2,9 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
+	"github.com/padeshaies/pkmdamagecalculator/helpers"
 	"github.com/padeshaies/pkmdamagecalculator/types"
 )
 
@@ -13,8 +13,6 @@ func handleGetCalc(w http.ResponseWriter, r *http.Request) {
 		LeftPokemon  types.Pokemon `json:"left_pokemon"`
 		RightPokemon types.Pokemon `json:"right_pokemon"`
 	}
-
-	fmt.Println("Handling GET /api/calc")
 
 	decoder := json.NewDecoder(r.Body)
 	params := parameters{}
@@ -25,14 +23,14 @@ func handleGetCalc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = calculateStats(&params.LeftPokemon)
+	err = helpers.CalculateStats(&params.LeftPokemon)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Error decoding request; Please provide valid Pokemon"))
 		return
 	}
 
-	err = calculateStats(&params.RightPokemon)
+	err = helpers.CalculateStats(&params.RightPokemon)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Error decoding request; Please provide valid Pokemon"))

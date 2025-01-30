@@ -1,4 +1,4 @@
-package main
+package helpers
 
 import (
 	"strings"
@@ -7,7 +7,7 @@ import (
 	"github.com/padeshaies/pkmdamagecalculator/types"
 )
 
-func calculateStats(pokemon *types.Pokemon) error {
+func CalculateStats(pokemon *types.Pokemon) error {
 	apiInfo, err := pokeapi.Pokemon(pokemon.Name)
 	if err != nil {
 		return err

@@ -1,4 +1,4 @@
-package main
+package helpers
 
 import (
 	"fmt"
@@ -82,7 +82,7 @@ func TestCalculateStats(t *testing.T) {
 		}
 		fmt.Println("Calculating stats for", tempNature, c.input.Name)
 
-		err := calculateStats(&c.input)
+		err := CalculateStats(&c.input)
 		if err != nil {
 			t.Errorf("/!\\ calculateStats(%v) returned an error: %v", c.input, err)
 		}
