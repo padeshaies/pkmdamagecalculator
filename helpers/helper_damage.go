@@ -13,6 +13,11 @@ func CalculateDamage(attacker types.Pokemon, defender types.Pokemon, move types.
 	// Calculate the damage dealt by the attacker to the defender using the given move
 	damage := make([]int, 16)
 
+	// Increase the power of the move depending on the terrain
+	if field.Terrain != "" {
+		considerTerrain(field, &move, attacker, defender)
+	}
+
 	// Base damage calculation (ie: BaseDamage = ((((2 × Level) ÷ 5 + 2) * BasePower * [Sp]Atk) ÷ [Sp]Def) ÷ 50 + 2)
 	var a, d int
 	switch move.DamageClass {
@@ -47,11 +52,6 @@ func CalculateDamage(attacker types.Pokemon, defender types.Pokemon, move types.
 	// Apply the weather modifier
 	if field.Weather != "" {
 		baseDamage = applyMultiplier(baseDamage, calculateWeatherModifier(field.Weather, move.Type))
-	}
-
-	// Apply the terrain modifier
-	if field.Terrain != "" {
-		baseDamage = applyMultiplier(baseDamage, calculateTerrainModifier(field, move.Type, attacker, defender))
 	}
 
 	// Apply the critical hit modifier
@@ -148,27 +148,29 @@ func isGrounded(pokemon types.Pokemon, field types.Field) bool {
 	return !(slices.Contains(pokemon.Type, types.Flying) || pokemon.Ability == "Levitate" || pokemon.Item == "Air Balloon") || (field.Gravity || pokemon.Item == "Iron Ball")
 }
 
-func calculateTerrainModifier(field types.Field, moveType types.Type, attacker types.Pokemon, defender types.Pokemon) float64 {
-
+// TODO: consider moves that are affected by terrain (terrain pulse, expanding force, etc.)
+func considerTerrain(field types.Field, move *types.Move, attacker types.Pokemon, defender types.Pokemon) {
+	bpBoost := 1.0
 	switch field.Terrain {
 	case types.ElectricTerrain:
-		if moveType == types.Electric && isGrounded(attacker, field) {
-			return 1.5
+		if move.Type == types.Electric && isGrounded(attacker, field) {
+			bpBoost = 1.3
 		}
 	case types.GrassyTerrain:
-		if moveType == types.Grass && isGrounded(attacker, field) {
-			return 1.5
+		if move.Type == types.Grass && isGrounded(attacker, field) {
+			bpBoost = 1.3
 		}
 	case types.PsychicTerrain:
-		if moveType == types.Psychic && isGrounded(attacker, field) {
-			return 1.5
+		if move.Type == types.Psychic && isGrounded(attacker, field) {
+			bpBoost = 1.3
 		}
 	case types.MistyTerrain:
-		if moveType == types.Dragon && isGrounded(defender, field) {
-			return 0.5
+		if move.Type == types.Dragon && isGrounded(defender, field) {
+			bpBoost = 0.5
 		}
 	}
-	return 1.0
+
+	move.Power = int(float64(move.Power) * bpBoost)
 }
 
 func calculateTypeEffectiveness(moveType types.Type, defenderTypes []types.Type, defenderAbility string) float64 {

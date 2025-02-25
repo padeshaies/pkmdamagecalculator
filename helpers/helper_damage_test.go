@@ -12,6 +12,7 @@ func TestCalculateDamage(t *testing.T) {
 			attacker types.Pokemon
 			defender types.Pokemon
 			move     types.Move
+			field    types.Field
 		}
 		expected []int
 	}{
@@ -21,6 +22,7 @@ func TestCalculateDamage(t *testing.T) {
 				attacker types.Pokemon
 				defender types.Pokemon
 				move     types.Move
+				field    types.Field
 			}{
 				attacker: types.Pokemon{
 					Name:  "glaceon",
@@ -44,6 +46,7 @@ func TestCalculateDamage(t *testing.T) {
 					DamageClass: "physical",
 					Target:      "selected-pokemon",
 				},
+				field: types.Field{},
 			},
 			expected: []int{168, 168, 168, 172, 172, 172, 180, 180, 180, 184, 184, 184, 192, 192, 192, 196},
 		},
@@ -53,6 +56,7 @@ func TestCalculateDamage(t *testing.T) {
 				attacker types.Pokemon
 				defender types.Pokemon
 				move     types.Move
+				field    types.Field
 			}{
 				attacker: types.Pokemon{
 					Name:  "miraidon",
@@ -76,13 +80,16 @@ func TestCalculateDamage(t *testing.T) {
 					DamageClass: "special",
 					Target:      "selected-pokemon",
 				},
+				field: types.Field{
+					Terrain: types.ElectricTerrain,
+				},
 			},
-			expected: []int{38176, 38620, 39072, 39520, 39972, 40420, 40872, 41320, 41764, 42216, 42664, 43116, 43564, 44016, 44464, 44916},
+			expected: []int{49624, 50208, 50788, 51376, 51960, 52540, 53128, 53712, 54292, 54880, 55464, 56044, 56632, 57216, 57796, 58384},
 		},
 	}
 
 	for _, c := range cases {
-		got := CalculateDamage(c.input.attacker, c.input.defender, c.input.move, types.Field{}) // null field, but we'll use it later
+		got := CalculateDamage(c.input.attacker, c.input.defender, c.input.move, c.input.field)
 
 		for i := 0; i < len(got); i++ {
 			if got[i] != c.expected[i] {
