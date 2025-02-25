@@ -45,7 +45,10 @@ func handleGetCalc(w http.ResponseWriter, r *http.Request) {
 		Target:      "selected-pokemon",
 		CriticalHit: false,
 	}
-	damage := helpers.CalculateDamage(params.LeftPokemon, params.RightPokemon, move)
+
+	field := types.Field{}
+
+	damage := helpers.CalculateDamage(params.LeftPokemon, params.RightPokemon, move, field)
 
 	type response struct {
 		Damage []int `json:"damage"`

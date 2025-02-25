@@ -24,7 +24,7 @@ func TestCalculateDamage(t *testing.T) {
 			}{
 				attacker: types.Pokemon{
 					Name:  "glaceon",
-					Type:  []string{"ice"},
+					Type:  []types.Type{types.Ice},
 					Level: 75,
 					FinalStats: map[string]int{
 						"attack": 123,
@@ -32,14 +32,14 @@ func TestCalculateDamage(t *testing.T) {
 				},
 				defender: types.Pokemon{
 					Name: "garchomp",
-					Type: []string{"dragon", "ground"},
+					Type: []types.Type{types.Dragon, types.Ground},
 					FinalStats: map[string]int{
 						"defense": 163,
 					},
 				},
 				move: types.Move{
 					Name:        "ice fang",
-					Type:        "ice",
+					Type:        types.Ice,
 					Power:       65,
 					DamageClass: "physical",
 					Target:      "selected-pokemon",
@@ -56,7 +56,7 @@ func TestCalculateDamage(t *testing.T) {
 			}{
 				attacker: types.Pokemon{
 					Name:  "miraidon",
-					Type:  []string{"electric", "dragon"},
+					Type:  []types.Type{types.Electric, types.Dragon},
 					Level: 100,
 					FinalStats: map[string]int{
 						"special-attack": 405,
@@ -64,14 +64,14 @@ func TestCalculateDamage(t *testing.T) {
 				},
 				defender: types.Pokemon{
 					Name: "wingull",
-					Type: []string{"water", "flying"},
+					Type: []types.Type{types.Water, types.Flying},
 					FinalStats: map[string]int{
 						"special-defense": 5,
 					},
 				},
 				move: types.Move{
 					Name:        "thunder",
-					Type:        "electric",
+					Type:        types.Electric,
 					Power:       110,
 					DamageClass: "special",
 					Target:      "selected-pokemon",
@@ -82,7 +82,7 @@ func TestCalculateDamage(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		got := CalculateDamage(c.input.attacker, c.input.defender, c.input.move)
+		got := CalculateDamage(c.input.attacker, c.input.defender, c.input.move, types.Field{}) // null field, but we'll use it later
 
 		for i := 0; i < len(got); i++ {
 			if got[i] != c.expected[i] {
