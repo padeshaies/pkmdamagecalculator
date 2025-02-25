@@ -3,6 +3,7 @@ package types
 type Field struct {
 	Weather Weather
 	Terrain Terrain
+	Gravity bool
 
 	Side1 Side
 	Side2 Side

@@ -45,7 +45,14 @@ func CalculateDamage(attacker types.Pokemon, defender types.Pokemon, move types.
 	}
 
 	// Apply the weather modifier
-	baseDamage = applyMultiplier(baseDamage, calculateWeatherModifier(field.Weather, move.Type))
+	if field.Weather != "" {
+		baseDamage = applyMultiplier(baseDamage, calculateWeatherModifier(field.Weather, move.Type))
+	}
+
+	// Apply the terrain modifier
+	if field.Terrain != "" {
+		baseDamage = applyMultiplier(baseDamage, calculateTerrainModifier(field, move.Type, attacker, defender))
+	}
 
 	// Apply the critical hit modifier
 	if move.CriticalHit && defender.Ability != "Battle Armor" && defender.Ability != "Shell Armor" {
@@ -93,6 +100,7 @@ func CalculateDamage(attacker types.Pokemon, defender types.Pokemon, move types.
 }
 
 // Pokemon's way of applying damage modifiers
+// (Applying the modifier M to the damage value D means multiplying D by M; then if the decimal part is ≤0.5, round the result down, otherwise round it up.)
 func applyMultiplier(damage int, modifier float64) int {
 	modifiedDamage := float64(damage) * modifier
 	_, decimal := math.Modf(modifiedDamage)
@@ -131,6 +139,33 @@ func calculateWeatherModifier(weather types.Weather, moveType types.Type) float6
 		}
 		if moveType == types.Water {
 			return 1.5
+		}
+	}
+	return 1.0
+}
+
+func isGrounded(pokemon types.Pokemon, field types.Field) bool {
+	return !(slices.Contains(pokemon.Type, types.Flying) || pokemon.Ability == "Levitate" || pokemon.Item == "Air Balloon") || (field.Gravity || pokemon.Item == "Iron Ball")
+}
+
+func calculateTerrainModifier(field types.Field, moveType types.Type, attacker types.Pokemon, defender types.Pokemon) float64 {
+
+	switch field.Terrain {
+	case types.ElectricTerrain:
+		if moveType == types.Electric && isGrounded(attacker, field) {
+			return 1.5
+		}
+	case types.GrassyTerrain:
+		if moveType == types.Grass && isGrounded(attacker, field) {
+			return 1.5
+		}
+	case types.PsychicTerrain:
+		if moveType == types.Psychic && isGrounded(attacker, field) {
+			return 1.5
+		}
+	case types.MistyTerrain:
+		if moveType == types.Dragon && isGrounded(defender, field) {
+			return 0.5
 		}
 	}
 	return 1.0
