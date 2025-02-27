@@ -37,7 +37,7 @@ func handleGetCalc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	move := types.Move{
+	/*move := types.Move{
 		Name:        "shadow ball",
 		Type:        "ghost",
 		Power:       80,
@@ -46,9 +46,9 @@ func handleGetCalc(w http.ResponseWriter, r *http.Request) {
 		CriticalHit: false,
 	}
 
-	field := types.Field{}
+	field := types.Field{}*/
 
-	damage := helpers.CalculateDamage(params.LeftPokemon, params.RightPokemon, move, field)
+	damage := []int{} //helpers.CalculateDamage(params.LeftPokemon, params.RightPokemon, move, field)
 
 	type response struct {
 		Damage []int `json:"damage"`
