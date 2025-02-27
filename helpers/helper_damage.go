@@ -1,6 +1,11 @@
 package helpers
 
-/*
+import (
+	"slices"
+
+	"github.com/padeshaies/pkmdamagecalculator/types"
+)
+
 // CalculateDamage calculates the damage dealt by the attacker to the defender using the given move
 // Source: https://www.smogon.com/bw/articles/bw_complete_damage_formula
 func CalculateDamage(attacker types.Pokemon, defender types.Pokemon, move types.Move, field types.Field) []int {
@@ -13,8 +18,7 @@ func CalculateDamage(attacker types.Pokemon, defender types.Pokemon, move types.
 	}
 
 	// 1. CALCULATE BASE DAMAGE (includes stats, bp, etc)
-
-	baseDamage := calculateBaseDamage(attacker, defender, move)
+	baseDamage := getBaseDamage(attacker, defender, move, field)
 
 	// 2. APPLY MULTI-TARGET MODIFIER
 	switch move.Target {
@@ -22,195 +26,218 @@ func CalculateDamage(attacker types.Pokemon, defender types.Pokemon, move types.
 		break
 	case "all-other-pokemon":
 	case "all-opponents":
-		baseDamage = ApplyMultiplier(baseDamage, 0xC00)
+		baseDamage = ApplyMultiplier(baseDamage, Modifier0_75x)
 	default:
 		return damage // Not targeting a Pokemon
 	}
 
 	// 3. APPLY WEATHER MODIFIER
+	if field.Weather != "" {
+		baseDamage = ApplyMultiplier(baseDamage, getWeatherModifier(field.Weather, move.Type))
+	}
 
 	// 4. APPLY CRITICAL HIT MODIFIER
 	if move.CriticalHit && defender.Ability != "Battle Armor" && defender.Ability != "Shell Armor" {
-		baseDamage = ApplyMultiplier(baseDamage, 0x1800)
+		baseDamage = ApplyMultiplier(baseDamage, Modifier1_5x)
 	}
+
+	// STORE FUTURE MODIFIERS
+	stabModifier := getStabModifier(attacker, move)
+	typeEffectiveness := getTypeEffectiveness(&move, defender, field)
+	isBurned := attacker.Status == "burn" && move.DamageClass == "physical" && attacker.Ability != "Guts"
+	finalModifiers := []int{}
 
 	// 5. ALTER WITH RANDOM FACTOR
 	for i := 0; i < 16; i++ {
-		damage[i] = int(float64(baseDamage) * (85.0 + float64(i)) / 100.0)
+		tempDamage := int(float64(baseDamage) * (85.0 + float64(i)) / 100.0)
 
-		// 6. STORE STAB MODIFIER
+		// 6. APPLY STAB MODIFIER
+		tempDamage = ApplyMultiplier(tempDamage, stabModifier)
 
-		// 7. STORE TYPE EFFECTIVENESS
+		// 7. APPLY TYPE EFFECTIVENESS
+		tempDamage = int(float64(tempDamage) * typeEffectiveness)
 
-		// 8. STORE BURN STATUS
-
-		// 9. APPLY FINAL MODIFIERS
-	}
-
-	if true {
-		// Increase the power of the move depending on the terrain
-		if field.Terrain != "" {
-			considerTerrain(field, &move, attacker, defender)
+		// 8. ALTER WITH BURN STATUS
+		if isBurned {
+			tempDamage = int(float64(tempDamage) * 0.5)
 		}
 
-		// Modify the stats of the attacker and defender
-		checkStats(&attacker, &defender, move, field)
+		// 9. CHAIN FINAL MODIFIERS
+		finalModifier := ChainMultipliers(finalModifiers...)
+		tempDamage = ApplyMultiplier(tempDamage, finalModifier)
 
-		// Base damage calculation (ie: BaseDamage = ((((2 × Level) ÷ 5 + 2) * BasePower * [Sp]Atk) ÷ [Sp]Def) ÷ 50 + 2)
-		var a, d int
-		switch move.DamageClass {
-		case "physical":
-			// TODO: Refactor this in a function for Choice items and other abilities that modify the stats
-			if attacker.Status == "burn" && attacker.Ability == "Guts" {
-				a = int(float64(attacker.FinalStats["attack"]) * 1.5)
-			} else {
-				a = int(attacker.FinalStats["attack"])
-			}
-			d = int(defender.FinalStats["defense"])
-		case "special":
-			a = int(attacker.FinalStats["special-attack"])
-			d = int(defender.FinalStats["special-defense"])
-		default:
-			return damage // Status moves don't deal damage
-		}
-		// 🤮 (to emulate the multiple floors they do in the games, we're forced to it like this...)
-		baseDamage := int(int(int((2*attacker.Level)/5+2)*move.Power*a)/d/50 + 2)
-
-		// Apply the multi-target modifier
-		switch move.Target {
-		case "selected-pokemon":
-			break
-		case "all-other-pokemon":
-		case "all-opponents":
-			baseDamage = applyMultiplier(baseDamage, 0.75)
-		default:
-			return damage // Not targeting a Pokemon
-		}
-
-		// Apply the weather modifier
-		if field.Weather != "" {
-			baseDamage = applyMultiplier(baseDamage, calculateWeatherModifier(field.Weather, move.Type))
-		}
-
-		// Apply the critical hit modifier
-		if move.CriticalHit && defender.Ability != "Battle Armor" && defender.Ability != "Shell Armor" {
-			baseDamage = applyMultiplier(baseDamage, 1.5)
-		}
-
-		// Store the STAB modifier
-		stabModifier := calculateStab(attacker.Type, move.Type)
-
-		// Store the type effectiveness
-		typeEffectiveness := calculateTypeEffectiveness(move.Type, defender.Type, defender.Ability)
-		if typeEffectiveness == 0 {
-			return damage // Defender is immune to the move
-		} else if typeEffectiveness >= 1 && move.Name == "electro drift" {
-			baseDamage = int(float64(baseDamage) * 5461.0 / 4096.0)
-		}
-
-		// Store the user's burn status
-		isBurned := attacker.Status == "burn" && move.DamageClass == "physical" && attacker.Ability != "Guts"
-
-		// add stuff to damage (ie: abilities, items, etc)
-
-		// Add randomization and chain the modifiers ('cause turns out that switching between floors and rounds is a pain 🙃)
-		for i, rand := range []int{15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0} {
-			tempDamage := int(baseDamage * (100 - rand) / 100)
-
-			// Apply STAB modifier
-			tempDamage = applyMultiplier(tempDamage, stabModifier)
-
-			// Apply with type effectiveness
-			tempDamage = int(float64(tempDamage) * typeEffectiveness)
-
-			// Apply with user's burn status
-			if isBurned {
-				tempDamage = int(float64(tempDamage) * 0.5)
-			}
-
-			// Make sure the damage is at least 1
-			if tempDamage < 1 {
-				tempDamage = 1
-			}
-
-			// TODO apply final modifier
-			damage[i] = tempDamage
-		}
+		// 10. STORE DAMAGE
+		damage[i] = tempDamage
 	}
 
 	return damage
 }
 
-// calculateWeatherModifier returns the weather-based damage modifier for a move
-func calculateWeatherModifier(weather types.Weather, moveType types.Type) float64 {
-	if weather == "" {
-		return 1.0
+func getBaseDamage(attacker types.Pokemon, defender types.Pokemon, move types.Move, field types.Field) int {
+	// Calculate the base damage of the move
+	basePower := getBasePower(move, attacker, defender, field)
+	baseDamageMods := getBaseDamageModifiers(move /*attacker, defender,*/, field)
+	basePower = ApplyMultiplier(basePower, ChainMultipliers(baseDamageMods...))
+
+	var attack, defense int
+
+	baseDamage := int(int(int((2*attacker.Level)/5+2)*basePower*attack)/defense/50 + 2)
+
+	return baseDamage
+}
+
+func getBasePower(move types.Move, attacker types.Pokemon, defender types.Pokemon, field types.Field) int {
+	var basePower int
+
+	switch move.Name {
+
+	// HP Based Moves
+	case "Eruption":
+	case "Water Spout":
+	case "Dragon Energy":
+		basePower = max(1, int(float64(attacker.CurrentHP)/float64(attacker.FinalStats["hp"])*150.0))
+
+	// Default
+	default:
+		basePower = move.Power
 	}
 
+	return basePower
+}
+
+func getBaseDamageModifiers(move types.Move /*attacker types.Pokemon, defender types.Pokemon,*/, field types.Field) []int {
+	var modifiers []int
+
+	isAttackerGrounded, isDefenderGrounded := true, true // TODO: Implement this
+
+	// Offensive Terrains
+	if isAttackerGrounded {
+		if (field.Terrain == types.ElectricTerrain && move.Type == types.Electric) ||
+			(field.Terrain == types.GrassyTerrain && move.Type == types.Grass) ||
+			(field.Terrain == types.PsychicTerrain && move.Type == types.Psychic) {
+			modifiers = append(modifiers, Modifier1_3x)
+		}
+	}
+
+	// Defensive Terrains
+	if isDefenderGrounded {
+		if (field.Terrain == types.MistyTerrain && move.Type == types.Dragon) ||
+			(field.Terrain == types.GrassyTerrain && (move.Name == "Earthquake" || move.Name == "Buldoze")) {
+			modifiers = append(modifiers, Modifier0_5x)
+		}
+	}
+
+	return modifiers
+}
+
+// getWeatherModifier returns the weather-based damage modifier for a move
+func getWeatherModifier(weather types.Weather, moveType types.Type) int {
 	switch weather {
 	case types.Sun:
 		if moveType == types.Fire {
-			return 1.5
+			return Modifier1_5x
 		}
 		if moveType == types.Water {
-			return 0.5
+			return Modifier0_5x
 		}
 	case types.Rain:
 		if moveType == types.Fire {
-			return 0.5
+			return Modifier0_5x
 		}
 		if moveType == types.Water {
-			return 1.5
+			return Modifier1_5x
 		}
 	}
-	return 1.0
+	return Modifier1x
 }
 
-func isGrounded(pokemon types.Pokemon, field types.Field) bool {
-	return !(slices.Contains(pokemon.Type, types.Flying) || pokemon.Ability == "Levitate" || pokemon.Item == "Air Balloon") || (field.Gravity || pokemon.Item == "Iron Ball")
-}
+func getTypeEffectiveness(move *types.Move, defender types.Pokemon, field types.Field) float64 {
+	effectiveness := 1.0
 
-// TODO: consider moves that are affected by terrain (terrain pulse, expanding force, etc.)
-func considerTerrain(field types.Field, move *types.Move, attacker types.Pokemon, defender types.Pokemon) {
-	bpBoost := 1.0
-	switch field.Terrain {
-	case types.ElectricTerrain:
-		if move.Type == types.Electric && isGrounded(attacker, field) {
-			bpBoost = 1.3
+	// If the move is Stellar type and the defender is a Tera type, always return super effective
+	if defender.IsTera && move.Type == types.Stellar {
+		return 2.0
+	}
+
+	// Check for immunities
+	if (move.Type == types.Grass && defender.Ability == "Sap Sipper") ||
+		(move.Type == types.Fire && slices.Contains([]string{"Well-Baked Body", "Flash Fire"}, defender.Ability)) ||
+		(move.Type == types.Water && slices.Contains([]string{"Water Absord", "Dry Skin", "Storm Drain"}, defender.Ability)) ||
+		(move.Type == types.Electric && slices.Contains([]string{"Lightning Rod", "Volt Absorb", "Motor Drive"}, defender.Ability)) ||
+		(move.Type == types.Ground && ((!field.Gravity && defender.Item != "Iron Ball" && (defender.Ability == "Levitate" || defender.Item == "Air Balloon")) || defender.Ability == "Earth Eater")) ||
+		(move.IsBullet() && defender.Ability == "Bulletproof") ||
+		(move.IsSound() && defender.Ability == "Soundproof") ||
+		(move.IsWind() && defender.Ability == "Wind Rider") {
+		return 0
+	}
+
+	defenderTypes := defender.Type
+	// If the defender is a Tera type, but not Stellar, override the defender's type to the Tera type
+	if defender.IsTera && defender.Tera != types.Stellar {
+		defenderTypes = []types.Type{defender.Tera}
+	}
+
+	// If the move is Ground, but the move ignores flying immunity, return the other types effectiveness
+	if move.Type == types.Ground && (move.Name == "Thousand Arrows" || defender.Item == "Iron Ball" || field.Gravity) {
+
+		for _, defenderType := range defenderTypes {
+			if defenderType != types.Flying {
+				effectiveness *= types.TypeChart[move.Type][defenderType]
+			}
 		}
-	case types.GrassyTerrain:
-		if move.Type == types.Grass && isGrounded(attacker, field) {
-			bpBoost = 1.3
-		}
-	case types.PsychicTerrain:
-		if move.Type == types.Psychic && isGrounded(attacker, field) {
-			bpBoost = 1.3
-		}
-	case types.MistyTerrain:
-		if move.Type == types.Dragon && isGrounded(defender, field) {
-			bpBoost = 0.5
+	} else if move.Type == types.Ground && move.Name != "Thousand Arrows" && defender.Item != "Iron Ball" && !field.Gravity &&
+		(defender.Ability == "Levitate" || defender.Item == "Air Balloon") {
+
+		effectiveness = 0
+	} else {
+		// Calculate the effectiveness of the move
+		for _, defenderType := range defenderTypes {
+			effectiveness *= types.TypeChart[move.Type][defenderType]
 		}
 	}
 
-	move.Power = int(float64(move.Power) * bpBoost)
-}
-
-func calculateTypeEffectiveness(moveType types.Type, defenderTypes []types.Type, defenderAbility string) float64 {
-	effectiveness := types.TypeChart[moveType][defenderTypes[0]]
-	if len(defenderTypes) > 1 {
-		effectiveness = effectiveness * types.TypeChart[moveType][defenderTypes[1]]
-	}
-	if defenderAbility == "Wonder Guard" && effectiveness < 2 {
+	// Check for Wonder Guard
+	if defender.Ability == "Wonder Guard" && effectiveness < 2 {
 		effectiveness = 0
 	}
+
 	return effectiveness
 }
 
-func calculateStab(attackerTypes []types.Type, moveType types.Type) float64 {
-	// TODO: Consider Adaptability and tera type
-	if slices.Contains(attackerTypes, moveType) {
-		return 1.5 // STAB bonus is 1.5x
+func getStabModifier(attacker types.Pokemon, move types.Move) int {
+	if attacker.IsTera {
+		if attacker.Tera == types.Stellar {
+			if slices.Contains(attacker.Type, move.Type) {
+				// If STAB and Tera type is Stellar and attacker has Adaptability, return 2.25x
+				if attacker.Ability == "Adaptability" {
+					return Modifier2_25x
+				}
+				// If STAB and Tera type is Stellar, return 2x
+				return Modifier2x
+			}
+			// If STAB and Tera type is Stellar, return 1.5x
+			return Modifier1_5x
+		}
+
+		if move.Type == attacker.Tera {
+			if slices.Contains(attacker.Type, move.Type) {
+				// If STAB and Tera type is the same as the attacker's type, return 2x
+				return Modifier2x
+			}
+			// If Tera is the same as the attacker's type but not STAB, return 1.5x
+			return Modifier1_5x
+		}
 	}
-	return 1.0
+
+	if slices.Contains(attacker.Type, move.Type) {
+		// If STAB and attacker has Adaptability, return 2x
+		if attacker.Ability == "Adaptability" {
+			return Modifier2x
+		}
+		// If STAB, return 1.5x
+		return Modifier1_5x
+	}
+
+	// else, no STAB then return 1x
+	return Modifier1x
 }
-*/

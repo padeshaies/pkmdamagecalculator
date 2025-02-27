@@ -12,6 +12,7 @@ func handleGetCalc(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		LeftPokemon  types.Pokemon `json:"left_pokemon"`
 		RightPokemon types.Pokemon `json:"right_pokemon"`
+		Field        types.Field   `json:"field"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
