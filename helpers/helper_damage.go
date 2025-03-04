@@ -80,6 +80,13 @@ func getBaseDamage(attacker types.Pokemon, defender types.Pokemon, move types.Mo
 	basePower = ApplyMultiplier(basePower, ChainMultipliers(baseDamageMods...))
 
 	var attack, defense int
+	if move.DamageClass == "physical" {
+		attack = attacker.Stats["attack"]
+		defense = defender.Stats["defense"]
+	} else {
+		attack = attacker.Stats["special-attack"]
+		defense = defender.Stats["special-defense"]
+	}
 
 	baseDamage := int(int(int((2*attacker.Level)/5+2)*basePower*attack)/defense/50 + 2)
 
