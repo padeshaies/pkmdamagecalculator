@@ -21,14 +21,8 @@ func CalculateDamage(attacker types.Pokemon, defender types.Pokemon, move types.
 	baseDamage := getBaseDamage(attacker, defender, move, field)
 
 	// 2. APPLY MULTI-TARGET MODIFIER
-	switch move.Target {
-	case "selected-pokemon":
-		break
-	case "all-other-pokemon":
-	case "all-opponents":
+	if move.Target == "all-other-pokemon" || move.Target == "all-opponents" {
 		baseDamage = ApplyMultiplier(baseDamage, Modifier0_75x)
-	default:
-		return damage // Not targeting a Pokemon
 	}
 
 	// 3. APPLY WEATHER MODIFIER
@@ -44,7 +38,7 @@ func CalculateDamage(attacker types.Pokemon, defender types.Pokemon, move types.
 	// STORE FUTURE MODIFIERS
 	stabModifier := getStabModifier(attacker, move)
 	typeEffectiveness := getTypeEffectiveness(&move, defender, field)
-	isBurned := attacker.Status == "burn" && move.DamageClass == "physical" && attacker.Ability != "Guts"
+	isBurned := attacker.Status == types.Burned && move.DamageClass == "physical" && attacker.Ability != "Guts"
 	finalModifiers := []int{}
 
 	// 5. ALTER WITH RANDOM FACTOR
