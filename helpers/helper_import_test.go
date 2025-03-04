@@ -20,13 +20,13 @@ func TestGetPokemonFromShowdownSet(t *testing.T) {
 		{
 			name: "happy path",
 			input: types.ShowdownPokemon{
-				Name:     "Gholdengo",
-				Item:     "Life Orb",
-				Ability:  "Good as Gold",
+				Name:     "gholdengo",
+				Item:     "life orb",
+				Ability:  "good as gold",
 				Level:    50,
-				TeraType: "Steel",
+				TeraType: "steel",
 				IsTera:   false,
-				Nature:   "Timid",
+				Nature:   "timid",
 				IVs: map[string]int{
 					"hp":              31,
 					"attack":          0,
@@ -51,21 +51,21 @@ func TestGetPokemonFromShowdownSet(t *testing.T) {
 					"speed":           0,
 				},
 				CurrentHP: 169,
-				Status:    "Healthy",
-				Move1:     "Make It Rain",
-				Move2:     "Shadow Ball",
-				Move3:     "Nasty Plot",
-				Move4:     "Protect",
+				Status:    "healthy",
+				Move1:     "make it rain",
+				Move2:     "shadow ball",
+				Move3:     "nasty plot",
+				Move4:     "protect",
 			},
 			expected: struct {
 				pokemon types.Pokemon
 				err     error
 			}{
 				pokemon: types.Pokemon{
-					Name:    "gholdengo",
+					Name:    "Gholdengo",
 					Type:    []types.Type{types.Steel, types.Ghost},
-					Item:    "life orb",
-					Ability: "good as gold",
+					Item:    "Life Orb",
+					Ability: "Good as Gold",
 					Level:   50,
 					Tera:    types.Steel,
 					IsTera:  false,
@@ -80,10 +80,10 @@ func TestGetPokemonFromShowdownSet(t *testing.T) {
 					CurrentHP: 169,
 					Status:    types.Healthy,
 					Moves: []types.Move{
-						{Name: "make it rain", Type: types.Steel, Power: 120, DamageClass: "special", Target: "all-opponents", CriticalHit: false},
-						{Name: "shadow ball", Type: types.Ghost, Power: 80, DamageClass: "special", Target: "selected-pokemon", CriticalHit: false},
-						{Name: "nasty plot", Type: types.Dark, Power: 0, DamageClass: "status", Target: "user", CriticalHit: false},
-						{Name: "protect", Type: types.Normal, Power: 0, DamageClass: "status", Target: "user", CriticalHit: false},
+						{Name: "Make It Rain", Type: types.Steel, Power: 120, DamageClass: "special", Target: "all-opponents", CriticalHit: false},
+						{Name: "Shadow Ball", Type: types.Ghost, Power: 80, DamageClass: "special", Target: "selected-pokemon", CriticalHit: false},
+						{Name: "Nasty Plot", Type: types.Dark, Power: 0, DamageClass: "status", Target: "user", CriticalHit: false},
+						{Name: "Protect", Type: types.Normal, Power: 0, DamageClass: "status", Target: "user", CriticalHit: false},
 					},
 				},
 				err: nil,
@@ -99,7 +99,7 @@ func TestGetPokemonFromShowdownSet(t *testing.T) {
 				err     error
 			}{
 				pokemon: types.Pokemon{
-					Name:  "shedinja",
+					Name:  "Shedinja",
 					Type:  []types.Type{types.Bug, types.Ghost},
 					Tera:  types.Bug,
 					Level: 1,
@@ -129,6 +129,34 @@ func TestGetPokemonFromShowdownSet(t *testing.T) {
 			}{
 				pokemon: types.Pokemon{},
 				err:     errors.New("invalid name"),
+			},
+		},
+		{
+			name: "invalid item",
+			input: types.ShowdownPokemon{
+				Name: "gholdengo",
+				Item: "invalid item",
+			},
+			expected: struct {
+				pokemon types.Pokemon
+				err     error
+			}{
+				pokemon: types.Pokemon{},
+				err:     errors.New("invalid item"),
+			},
+		},
+		{
+			name: "invalid ability",
+			input: types.ShowdownPokemon{
+				Name:    "gholdengo",
+				Ability: "invalid ability",
+			},
+			expected: struct {
+				pokemon types.Pokemon
+				err     error
+			}{
+				pokemon: types.Pokemon{},
+				err:     errors.New("invalid ability"),
 			},
 		},
 		{

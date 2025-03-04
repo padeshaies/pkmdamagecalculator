@@ -14,11 +14,47 @@ func ImportPokemonFromShowdownSet(showdownSet types.ShowdownPokemon) (types.Poke
 		return types.Pokemon{}, err
 	}
 
+	// Get the English name of the pokemon
+	var prettyName string
+	apiSpecies, _ := pokeapi.PokemonSpecies(apiInfo.Species.Name)
+	for _, name := range apiSpecies.Names {
+		if name.Language.Name == "en" {
+			prettyName = name.Name
+			break
+		}
+	}
+
+	// Get the English name of the item
+	var prettyItem string
+	apiItem, err := pokeapi.Item(strings.ReplaceAll(strings.ToLower(showdownSet.Item), " ", "-"))
+	if err != nil {
+		return types.Pokemon{}, err
+	}
+	for _, name := range apiItem.Names {
+		if name.Language.Name == "en" {
+			prettyItem = name.Name
+			break
+		}
+	}
+
+	// Get the English name of the ability
+	var prettyAbility string
+	apiAbility, err := pokeapi.Ability(strings.ReplaceAll(strings.ToLower(showdownSet.Ability), " ", "-"))
+	if err != nil {
+		return types.Pokemon{}, err
+	}
+	for _, name := range apiAbility.Names {
+		if name.Language.Name == "en" {
+			prettyAbility = name.Name
+			break
+		}
+	}
+
 	// Initialize Pokemon
 	pokemon := types.Pokemon{
-		Name:    strings.ToLower(showdownSet.Name),
-		Item:    strings.ToLower(showdownSet.Item),
-		Ability: strings.ToLower(showdownSet.Ability),
+		Name:    prettyName,
+		Item:    prettyItem,
+		Ability: prettyAbility,
 		Level:   max(1, showdownSet.Level), // Level 1 is the minimum level for a pokemon
 		IsTera:  showdownSet.IsTera,
 		Stats:   make(map[string]int, 6),
@@ -50,7 +86,7 @@ func ImportPokemonFromShowdownSet(showdownSet types.ShowdownPokemon) (types.Poke
 	}
 
 	// Calculcate HP
-	if pokemon.Name == "shedinja" {
+	if pokemon.Name == "Shedinja" {
 		pokemon.Stats["hp"] = 1
 	} else {
 		pokemon.Stats["hp"] = (2*apiInfo.Stats[0].BaseStat+safeGetIV(showdownSet, "hp")+safeGetEV(showdownSet, "hp")/4)*pokemon.Level/100 + pokemon.Level + 10
@@ -104,7 +140,7 @@ func ImportPokemonFromShowdownSet(showdownSet types.ShowdownPokemon) (types.Poke
 			var moveName string
 			for _, name := range apiMove.Names {
 				if name.Language.Name == "en" {
-					moveName = strings.ToLower(name.Name)
+					moveName = name.Name
 					break
 				}
 			}
