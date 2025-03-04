@@ -10,9 +10,9 @@ import (
 
 func handleGetCalc(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		LeftPokemon  types.Pokemon `json:"left_pokemon"`
-		RightPokemon types.Pokemon `json:"right_pokemon"`
-		Field        types.Field   `json:"field"`
+		LeftPokemon  types.ShowdownPokemon `json:"left_pokemon"`
+		RightPokemon types.ShowdownPokemon `json:"right_pokemon"`
+		Field        types.Field           `json:"field"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -24,32 +24,24 @@ func handleGetCalc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = helpers.CalculateStats(&params.LeftPokemon)
+	leftPokemon, err := helpers.ImportPokemonFromShowdownSet(params.LeftPokemon)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Error decoding request; Please provide valid Pokemon"))
 		return
 	}
 
-	err = helpers.CalculateStats(&params.RightPokemon)
+	rightPokemon, err := helpers.ImportPokemonFromShowdownSet(params.RightPokemon)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Error decoding request; Please provide valid Pokemon"))
 		return
 	}
 
-	/*move := types.Move{
-		Name:        "shadow ball",
-		Type:        "ghost",
-		Power:       80,
-		DamageClass: "special",
-		Target:      "selected-pokemon",
-		CriticalHit: false,
-	}
+	field := types.Field{}
 
-	field := types.Field{}*/
-
-	damage := []int{} //helpers.CalculateDamage(params.LeftPokemon, params.RightPokemon, move, field)
+	// change this to check all moves
+	damage := helpers.CalculateDamage(leftPokemon, rightPokemon, leftPokemon.Moves[0], field)
 
 	type response struct {
 		Damage []int `json:"damage"`

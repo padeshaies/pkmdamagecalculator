@@ -95,7 +95,7 @@ func getBasePower(move types.Move, attacker types.Pokemon, defender types.Pokemo
 	case "Eruption":
 	case "Water Spout":
 	case "Dragon Energy":
-		basePower = max(1, int(float64(attacker.CurrentHP)/float64(attacker.FinalStats["hp"])*150.0))
+		basePower = max(1, int(float64(attacker.CurrentHP)/float64(attacker.Stats["hp"])*150.0))
 
 	// Default
 	default:

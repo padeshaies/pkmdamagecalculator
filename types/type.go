@@ -1,5 +1,7 @@
 package types
 
+import "slices"
+
 type Type string
 
 const (
@@ -24,6 +26,12 @@ const (
 
 	Stellar Type = "stellar"
 )
+
+func (t Type) IsValid() bool {
+	return slices.Contains([]Type{
+		Normal, Fighting, Flying, Poison, Ground, Rock, Bug, Ghost, Steel, Fire, Water, Grass, Electric, Psychic, Ice, Dragon, Dark, Fairy, Stellar,
+	}, t)
+}
 
 var TypeChart = map[Type]map[Type]float64{
 	Normal: {
